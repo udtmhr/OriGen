@@ -1,0 +1,30 @@
+# Common
+.DS_Store
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+.uv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+backend/__pycache__/
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
