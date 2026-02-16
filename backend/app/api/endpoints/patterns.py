@@ -12,52 +12,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # In-memory storage for now
-patterns_db: List[Pattern] = [
-    Pattern(
-        id="1",
-        name="Hikari-ji",
-        name_kanji="光路",
-        name_romaji="Hikari-ji",
-        description="Light path pattern",
-        width=8,
-        height=8,
-        image_url="https://placehold.co/400x400/e2e8f0/1e293b?text=Hikari-ji", # Placeholder
-        grid=[[((r+c)%2) for c in range(8)] for r in range(8)]
-    ),
-    Pattern(
-        id="2",
-        name="Haneiro",
-        name_kanji="羽彩",
-        name_romaji="Haneiro",
-        description="Feather color pattern",
-        width=8,
-        height=8,
-        image_url="https://placehold.co/400x400/e2e8f0/1e293b?text=Haneiro", # Placeholder
-        grid=[[((r)%2) for c in range(8)] for r in range(8)]
-    ),
-    Pattern(
-        id="3",
-        name="Flower",
-        name_kanji="花",
-        name_romaji="Hana",
-        description="Flower pattern",
-        width=8,
-        height=8,
-        image_url="https://placehold.co/400x400/e2e8f0/1e293b?text=Hana", # Placeholder
-        grid=[[((c)%2) for c in range(8)] for r in range(8)]
-    ),
-    Pattern(
-        id="4",
-        name="Stripe",
-        name_kanji="縞",
-        name_romaji="Shima",
-        description="Stripe pattern",
-        width=8,
-        height=8,
-        image_url="https://placehold.co/400x400/e2e8f0/1e293b?text=Shima", # Placeholder
-        grid=[[0 for c in range(8)] for r in range(8)]
-    )
-]
+# Static patterns removed as per user request
+patterns_db: List[Pattern] = []
 
 async def fetch_vercel_blobs() -> List[Pattern]:
     token = os.environ.get("BLOB_READ_WRITE_TOKEN")
@@ -121,8 +77,8 @@ async def fetch_vercel_blobs() -> List[Pattern]:
 
 @router.get("/patterns", response_model=List[Pattern])
 async def list_patterns():
-    blob_patterns = await fetch_vercel_blobs()
-    return patterns_db + blob_patterns
+    # Only return Vercel Blob patterns
+    return await fetch_vercel_blobs()
 
 @router.get("/patterns/{id:path}", response_model=Pattern)
 async def get_pattern(id: str):
