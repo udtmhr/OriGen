@@ -40,33 +40,20 @@ const PatternList: React.FC = () => {
                     {patterns.map((pattern) => (
                         <Link
                             key={pattern.id}
-                            to={`/workspace/${pattern.id}`}
-                            className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col items-center pb-4 border border-gray-100"
+                            to={`/workspace/${encodeURIComponent(pattern.id)}`}
+                            className="aspect-square bg-gray-100 rounded-2xl overflow-hidden hover:opacity-90 transition-opacity"
                         >
-                            <div className="w-full aspect-square bg-gray-200 mb-3 relative overflow-hidden">
-                                {pattern.image_url ? (
-                                    <img
-                                        src={pattern.image_url}
-                                        alt={pattern.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        No Image
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="text-center px-2">
-                                <h3 className="font-bold text-gray-800 text-lg mb-1">
-                                    {pattern.name_kanji || pattern.name}
-                                </h3>
-                                {(pattern.name_romaji || pattern.name !== pattern.name_kanji) && (
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {pattern.name_romaji || pattern.name}
-                                    </p>
-                                )}
-                            </div>
+                            {pattern.image_url ? (
+                                <img
+                                    src={pattern.image_url}
+                                    alt={pattern.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    No Image
+                                </div>
+                            )}
                         </Link>
                     ))}
                 </div>

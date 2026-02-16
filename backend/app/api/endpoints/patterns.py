@@ -3,6 +3,11 @@ from typing import List
 from uuid import uuid4
 from ...models import Pattern, PatternCreate, GenerationRequest
 from ...services.ai_engine import get_engine
+import os
+import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -54,15 +59,81 @@ patterns_db: List[Pattern] = [
     )
 ]
 
+async def fetch_vercel_blobs() -> List[Pattern]:
+    token = os.environ.get("BLOB_READ_WRITE_TOKEN")
+    if not token:
+        logger.warning("BLOB_READ_WRITE_TOKEN not set. Skipping Vercel Blob fetch.")
+        return []
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://blob.vercel-storage.com",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            blobs = data.get("blobs", [])
+            patterns = []
+            for blob in blobs:
+                # Use URL as ID, might need encoding in frontend
+                url = blob.get("url")
+                pathname = blob.get("pathname")
+                
+                if not url or not pathname:
+                    continue
+
+                # Create a pattern from the blob
+                # Default 8x8 empty grid
+                patterns.append(Pattern(
+                    id=url,
+                    name=pathname, # Use filename as name
+                    name_kanji=pathname,
+                    name_romaji=pathname,
+                    description="Imported from Vercel Blob",
+                    width=8,
+                    height=8,
+                    image_url=url,
+                    grid=[[0 for _ in range(8)] for _ in range(8)]
+                ))
+            return patterns
+    except Exception as e:
+        logger.error(f"Failed to fetch Vercel Blobs: {e}")
+        return []
+
 @router.get("/patterns", response_model=List[Pattern])
 async def list_patterns():
-    return patterns_db
+    blob_patterns = await fetch_vercel_blobs()
+    return patterns_db + blob_patterns
 
-@router.get("/patterns/{id}", response_model=Pattern)
+@router.get("/patterns/{id:path}", response_model=Pattern)
 async def get_pattern(id: str):
+    # Check static patterns
     for p in patterns_db:
         if p.id == id:
             return p
+    
+    # Check if it looks like a URL (Vercel Blob)
+    if id.startswith("http"):
+        # Synthesize pattern from URL
+        # Extract filename from URL (last part)
+        try:
+            filename = id.split("/")[-1]
+            return Pattern(
+                id=id,
+                name=filename,
+                name_kanji=filename,
+                name_romaji=filename,
+                description="Imported from Vercel Blob",
+                width=8,
+                height=8,
+                image_url=id,
+                grid=[[0 for _ in range(8)] for _ in range(8)]
+            )
+        except Exception:
+            pass # Fallthrough to 404
+
     raise HTTPException(status_code=404, detail="Pattern not found")
 
 @router.post("/generate")

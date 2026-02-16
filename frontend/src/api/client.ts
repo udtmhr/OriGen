@@ -8,7 +8,7 @@ export const getPatterns = async () => {
 };
 
 export const getPattern = async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/patterns/${id}`);
+    const response = await fetch(`${API_BASE_URL}/patterns/${encodeURIComponent(id)}`);
     if (!response.ok) throw new Error("Failed to fetch pattern");
     return response.json();
 };
