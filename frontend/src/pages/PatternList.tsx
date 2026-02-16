@@ -50,8 +50,9 @@ const PatternList: React.FC = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                    No Image
+                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-2 text-center text-xs break-all">
+                                    <span>No Image</span>
+                                    <span className="mt-1">{pattern.name}</span>
                                 </div>
                             )}
                         </Link>

@@ -69,7 +69,10 @@ async def fetch_vercel_blobs() -> List[Pattern]:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://blob.vercel-storage.com",
-                headers={"Authorization": f"Bearer {token}"}
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "x-api-version": "1"
+                }
             )
             response.raise_for_status()
             data = response.json()
@@ -77,30 +80,44 @@ async def fetch_vercel_blobs() -> List[Pattern]:
             blobs = data.get("blobs", [])
             patterns = []
             for blob in blobs:
-                # Use URL as ID, might need encoding in frontend
+                # Use URL as ID
                 url = blob.get("url")
+                download_url = blob.get("downloadUrl")
+                # Prefer downloadUrl if available and different? Usually url is fine.
+                # But let's use url as id and image_url.
+                
                 pathname = blob.get("pathname")
                 
                 if not url or not pathname:
                     continue
 
                 # Create a pattern from the blob
-                # Default 8x8 empty grid
                 patterns.append(Pattern(
                     id=url,
-                    name=pathname, # Use filename as name
+                    name=pathname, 
                     name_kanji=pathname,
                     name_romaji=pathname,
                     description="Imported from Vercel Blob",
                     width=8,
                     height=8,
-                    image_url=url,
+                    image_url=download_url or url, # Use downloadUrl if available
                     grid=[[0 for _ in range(8)] for _ in range(8)]
                 ))
             return patterns
     except Exception as e:
         logger.error(f"Failed to fetch Vercel Blobs: {e}")
-        return []
+        # Return a dummy pattern with error details for debugging (only in dev)
+        return [Pattern(
+             id="error",
+             name="Error fetching blobs",
+             name_kanji="エラー",
+             name_romaji="Error",
+             description=str(e),
+             width=8,
+             height=8,
+             image_url="",
+             grid=[[0 for _ in range(8)] for _ in range(8)]
+        )]
 
 @router.get("/patterns", response_model=List[Pattern])
 async def list_patterns():
