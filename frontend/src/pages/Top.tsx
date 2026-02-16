@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Network } from 'lucide-react'; // Using Network as a placeholder for the weaving icon
+// import { Network } from 'lucide-react'; // Network icon used as raw SVG in fallback below
 
 const Top: React.FC = () => {
     return (
