@@ -63,30 +63,27 @@ To use the **Cloud API** mode, you need an OpenAI API Key.
 2. Add your key: `OPENAI_API_KEY=sk-...`
 
 
+
 ## Deployment (Vercel)
 
-This project is configured as a Monorepo for Vercel deployment (Frontend + Python Backend).
+Deploy this repository as **two separate projects** on Vercel:
 
-1. **Install Vercel CLI** (Optional, or connect via GitHub):
-   ```bash
-   npm i -g vercel
-   ```
-
-2. **Configure Environment Variables**:
-   In your Vercel Project Settings, add:
+### 1. Backend Project
+1. Import the repository.
+2. Set **Root Directory** to `backend`.
+3. Select **Framework Preset**: `Other` (or utilize `@vercel/python` automatically).
+4. Add Environment Variable:
    - `OPENAI_API_KEY`: Your OpenAI API key.
-   - `VITE_API_URL`: (Optional) If you deploy frontend/backend separately. For Monorepo, leave it empty or set to `/api` (automatically handled).
+5. Deploy.
+6. **Copy the assigned domain** (e.g., `https://origen-backend.vercel.app`).
 
-3. **Deploy from GitHub**:
-   - Push your code to GitHub.
-   - Import the repository in Vercel.
-   - Vercel should automatically detect the configuration from `vercel.json`.
-   - **Framework Preset**: Use "Vite" for the Frontend if asked, but `vercel.json` usually handles it.
-   - **Root Directory**: Keep it as `./` (Project Root).
-
-4. **Verify**:
-   - The frontend will be served at `https://your-project.vercel.app`.
-   - The backend API will be at `https://your-project.vercel.app/api/...`.
+### 2. Frontend Project
+1. Import the repository (again).
+2. Set **Root Directory** to `frontend`.
+3. Select **Framework Preset**: `Vite`.
+4. Add Environment Variable:
+   - `VITE_API_URL`: The URL of your Backend Project (e.g., `https://origen-backend.vercel.app`).
+5. Deploy.
 
 ## License
 
