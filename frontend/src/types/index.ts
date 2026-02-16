@@ -14,5 +14,6 @@ export interface Pattern {
 export interface GenerationRequest {
     basePatternId?: string;
     instruction: string;
-    grid?: number[][]; // If modifying current state
+    current_grid?: number[][]; // If modifying current state
+    model_type?: 'api' | 'gemini';
 }

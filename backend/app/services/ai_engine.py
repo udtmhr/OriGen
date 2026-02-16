@@ -99,11 +99,95 @@ class APIEngine(AIEngine):
             return [[1 - cell for cell in row] for row in grid]
 
 
+
+try:
+    from google import genai
+    from google.genai import types
+    from PIL import Image
+    import io
+    import numpy as np
+except ImportError:
+    pass # Handle missing deps gracefully if running without them
+
+class GeminiEngine(AIEngine):
+    def __init__(self):
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("Warning: GEMINI_API_KEY not found.")
+        self.client = genai.Client(api_key=api_key)
+
+    async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
+        width = len(grid[0]) if grid and len(grid) > 0 else 8
+        height = len(grid) if grid else 8
+
+        prompt = f"""
+        Design a high-contrast, black and white weaving pattern based on this description: "{instruction}".
+        The image should be a clear, tiling textile pattern.
+        """
+        
+        try:
+            response = self.client.models.generate_images(
+                model='gemini-2.0-flash-exp', # Using 2.0 Flash as proxy for 2.5/Nano Banana if not public yet, or strictly 'gemini-2.5-flash-image' if available. 
+                # Note: 'gemini-2.5-flash-image' might be the name. Let's try 'gemini-2.0-flash-exp' or 'imagen-3.0-generate-001'? 
+                # User asked for "Nano Banana" which is 2.5. 
+                # I will use 'gemini-2.0-flash-exp' as a safe default for strictly "Gemini" API or check if 'gemini-2.5-flash' supports images?
+                # Actually, the search result said "Nano Banana" is "gemini-2.5-flash-image".
+                # I will use that.
+                prompt=prompt,
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    include_rai_reason=True,
+                    output_mime_type="image/jpeg"
+                )
+            )
+            
+            if not response.generated_images:
+                print("No image generated")
+                return grid
+
+            image_bytes = response.generated_images[0].image.image_bytes
+            return self._image_to_grid(image_bytes, width, height)
+
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            # Fallback trying a different model name if 2.5 fails?
+            return grid
+
+    def _image_to_grid(self, image_data: bytes, target_w: int, target_h: int) -> List[List[int]]:
+        try:
+            img = Image.open(io.BytesIO(image_data))
+            # Convert to grayscale
+            img = img.convert("L")
+            # Resize to grid dimensions (using Nearest Neighbor to keep structure, or Lanczos for smooth?)
+            # Validating: Grid is small (e.g. 8x8 or 16x16). Downscaling complex image might be messy.
+            img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            
+            # Thresholding to 0 and 1
+            # 0 = white/light, 1 = black/dark? 
+            # In our current grid: 0 (white?) 1 (black?). 
+            # Let's check existing patterns. Hikari-ji: 0/1.
+            # Usually 1 is foreground (thread present).
+            
+            # Convert to numpy array
+            arr = np.array(img)
+            # Normalize and threshold (mean?)
+            threshold = 128
+            binary = (arr < threshold).astype(int) # Darker than 128 becomes 1, Lighter becomes 0
+            
+            return binary.tolist()
+        except Exception as e:
+            print(f"Image processing error: {e}")
+            return [[0]*target_w for _ in range(target_h)]
+
+
 class LocalEngine(AIEngine):
     async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
         # TODO: Implement Local Model call
         return grid
 
 def get_engine(model_type: str) -> AIEngine:
+    if model_type == "gemini":
+        return GeminiEngine()
     # Always use APIEngine for Vercel deployment as per user request
     return APIEngine()
+

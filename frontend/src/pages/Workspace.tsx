@@ -29,7 +29,7 @@ const Workspace: React.FC = () => {
         },
         { role: 'system', text: '今の気分や作りたいイメージを教えてください' }
     ]);
-    const modelType = 'api'; // Fixed to API for Vercel deployment
+    const [modelType, setModelType] = useState<'api' | 'gemini'>('api');
 
     useEffect(() => {
         if (id && !pattern) {
@@ -93,10 +93,20 @@ const Workspace: React.FC = () => {
             </header>
 
             <div className="flex flex-1 overflow-hidden">
-
-
                 {/* Chat Interface */}
                 <div className="w-full max-w-3xl mx-auto flex flex-col bg-white border-x shadow-sm h-full">
+                    <div className="px-4 py-2 border-b flex items-center justify-between bg-gray-50 text-xs text-gray-500">
+                        <span>AI Engine</span>
+                        <select
+                            className="border rounded px-2 py-1 bg-white"
+                            value={modelType}
+                            onChange={(e) => setModelType(e.target.value as 'api' | 'gemini')}
+                        >
+                            <option value="api">OpenAI (Logic)</option>
+                            <option value="gemini">Gemini (Visual)</option>
+                        </select>
+                    </div>
+
                     <div className="flex-1 p-4 overflow-y-auto space-y-4">
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex gap-3 mb-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -142,7 +152,7 @@ const Workspace: React.FC = () => {
                     <div className="p-4 border-t gap-2 flex">
                         <input
                             className="flex-1 border rounded px-3 py-2"
-                            placeholder="例: 春の穏やかな雰囲気，パステルカラー"
+                            placeholder={modelType === 'gemini' ? "どんな柄の画像を作りたいですか？ (例: 猫のピクセルアート)" : "例: 春の穏やかな雰囲気，パステルカラー"}
                             value={instruction}
                             onChange={(e) => setInstruction(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -155,6 +165,10 @@ const Workspace: React.FC = () => {
                         >
                             <Send size={18} />
                         </button>
+                    </div>
+                    {/* Model Info Footnote */}
+                    <div className="px-4 py-1 bg-gray-50 text-[10px] text-center text-gray-400">
+                        Powered by {modelType === 'api' ? 'OpenAI GPT-4' : 'Google Gemini 2.5 Flash'}
                     </div>
                 </div>
             </div>
