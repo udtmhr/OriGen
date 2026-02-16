@@ -62,6 +62,32 @@ To use the **Cloud API** mode, you need an OpenAI API Key.
 1. Create a `.env` file in the `backend` directory based on `.env.example`.
 2. Add your key: `OPENAI_API_KEY=sk-...`
 
+
+## Deployment (Vercel)
+
+This project is configured as a Monorepo for Vercel deployment (Frontend + Python Backend).
+
+1. **Install Vercel CLI** (Optional, or connect via GitHub):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Configure Environment Variables**:
+   In your Vercel Project Settings, add:
+   - `OPENAI_API_KEY`: Your OpenAI API key.
+   - `VITE_API_URL`: (Optional) If you deploy frontend/backend separately. For Monorepo, leave it empty or set to `/api` (automatically handled).
+
+3. **Deploy from GitHub**:
+   - Push your code to GitHub.
+   - Import the repository in Vercel.
+   - Vercel should automatically detect the configuration from `vercel.json`.
+   - **Framework Preset**: Use "Vite" for the Frontend if asked, but `vercel.json` usually handles it.
+   - **Root Directory**: Keep it as `./` (Project Root).
+
+4. **Verify**:
+   - The frontend will be served at `https://your-project.vercel.app`.
+   - The backend API will be at `https://your-project.vercel.app/api/...`.
+
 ## License
 
 [MIT](LICENSE)

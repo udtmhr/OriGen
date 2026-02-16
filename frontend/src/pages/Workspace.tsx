@@ -29,7 +29,7 @@ const Workspace: React.FC = () => {
         },
         { role: 'system', text: '今の気分や作りたいイメージを教えてください' }
     ]);
-    const [modelType, setModelType] = useState<string>('local');
+    const modelType = 'api'; // Fixed to API for Vercel deployment
 
     useEffect(() => {
         if (id && !pattern) {
@@ -97,17 +97,6 @@ const Workspace: React.FC = () => {
 
                 {/* Chat Interface */}
                 <div className="w-full max-w-3xl mx-auto flex flex-col bg-white border-x shadow-sm h-full">
-                    <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                        <span className="font-semibold text-sm">Model:</span>
-                        <select
-                            className="border rounded px-2 py-1 text-sm"
-                            value={modelType}
-                            onChange={(e) => setModelType(e.target.value)}
-                        >
-                            <option value="api">Cloud API (OpenAI)</option>
-                            <option value="local">Local (Mock)</option>
-                        </select>
-                    </div>
                     <div className="flex-1 p-4 overflow-y-auto space-y-4">
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex gap-3 mb-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>

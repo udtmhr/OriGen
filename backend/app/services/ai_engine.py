@@ -105,8 +105,5 @@ class LocalEngine(AIEngine):
         return grid
 
 def get_engine(model_type: str) -> AIEngine:
-    if model_type == "local":
-        return MockEngine()
-    if model_type == "api":
-        return APIEngine()
-    return MockEngine()
+    # Always use APIEngine for Vercel deployment as per user request
+    return APIEngine()
