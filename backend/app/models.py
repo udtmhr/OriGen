@@ -22,5 +22,5 @@ class Pattern(PatternBase):
 class GenerationRequest(BaseModel):
     base_pattern_id: Optional[str] = None
     instruction: str
-    model_type: str = "api" # 'api' or 'gemini'
+    model_type: str = "gemini" # 'api' or 'gemini'
     image_url: Optional[str] = None

@@ -29,7 +29,7 @@ const Workspace: React.FC = () => {
         },
         { role: 'system', text: '今の気分や作りたいイメージを教えてください' }
     ]);
-    const [modelType, setModelType] = useState<'api' | 'gemini'>('api');
+    const [modelType, setModelType] = useState<'api' | 'gemini'>('gemini');
 
     useEffect(() => {
         if (id && !pattern) {
