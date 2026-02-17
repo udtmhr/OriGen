@@ -111,19 +111,25 @@ async def get_pattern(id: str):
 
 @router.post("/generate")
 async def generate_pattern(request: GenerationRequest):
-    # Retrieve base pattern if ID is provided
-    base_grid = request.current_grid
-    if not base_grid and request.base_pattern_id:
-         for p in patterns_db:
-            if p.id == request.base_pattern_id:
-                base_grid = p.grid
-                break
+    image_url = request.image_url
     
-    if not base_grid:
-        # Default 8x8 empty if nothing provided
-        base_grid = [[0]*8 for _ in range(8)]
-
+    # If not provided, check base_pattern_id (if it looks like a URL)
+    if not image_url and request.base_pattern_id:
+        # Check static db (legacy)
+        for p in patterns_db:
+             if p.id == request.base_pattern_id:
+                  image_url = p.image_url
+                  break
+        
+        # If still not found and looks like URL
+        if not image_url and request.base_pattern_id.startswith("http"):
+             image_url = request.base_pattern_id
+    
     engine = get_engine(request.model_type)
-    new_grid = await engine.generate(base_grid, request.instruction)
     
-    return {"grid": new_grid}
+    # Call generate with image_url
+    generated_image_url = await engine.generate(request.instruction, image_url=image_url)
+    
+    return {
+        "generated_image_url": generated_image_url
+    }

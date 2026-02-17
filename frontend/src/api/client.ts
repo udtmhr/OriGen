@@ -20,5 +20,5 @@ export const generatePattern = async (data: any) => {
         body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Failed to generate pattern");
-    return response.json();
+    return response.json(); // Returns { generated_image_url: "..." }
 };

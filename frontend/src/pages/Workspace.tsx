@@ -60,17 +60,22 @@ const Workspace: React.FC = () => {
             const result = await generatePattern({
                 base_pattern_id: pattern.id,
                 instruction: userMsg,
-                current_grid: pattern.grid,
-                model_type: modelType
+                model_type: modelType,
+                image_url: pattern.image_url // Pass the pattern image
             });
 
-            setPattern(prev => prev ? { ...prev, grid: result.grid } : null);
+            // Use the generated image URL if available, otherwise fallback to placeholder
+            const generatedImage = result.generated_image_url || `https://placehold.co/400x400/e2e8f0/1e293b?text=Generated+${Date.now()}`;
+
+            // Grid update removed as per user request
+            // setPattern(prev => prev ? { ...prev, grid: result.grid } : null);
+
             setMessages(prev => [
                 ...prev,
                 {
                     role: 'system',
                     text: '新しいパターンを生成しました。',
-                    imageUrl: `https://placehold.co/400x400/e2e8f0/1e293b?text=Generated+${Date.now()}` // Mock image
+                    imageUrl: generatedImage
                 }
             ]);
         } catch (err: any) {
@@ -102,8 +107,8 @@ const Workspace: React.FC = () => {
                             value={modelType}
                             onChange={(e) => setModelType(e.target.value as 'api' | 'gemini')}
                         >
-                            <option value="api">OpenAI (Logic)</option>
-                            <option value="gemini">Gemini (Visual)</option>
+                            <option value="gemini">Gemini</option>
+                            <option value="api">OpenAI</option>
                         </select>
                     </div>
 

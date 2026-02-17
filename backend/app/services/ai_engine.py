@@ -3,33 +3,14 @@ from typing import List
 
 class AIEngine(abc.ABC):
     @abc.abstractmethod
-    async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
+    @abc.abstractmethod
+    async def generate(self, instruction: str, image_url: str = None) -> str | None:
         pass
 
 class MockEngine(AIEngine):
-    async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
-        instruction = instruction.lower()
-        height = len(grid)
-        width = len(grid[0]) if height > 0 else 8
-
-        if "reset" in instruction or "clear" in instruction:
-            return [[0 for _ in range(width)] for _ in range(height)]
-        
-        if "checkerboard" in instruction or "ichimatsu" in instruction:
-            return [[((r+c)%2) for c in range(width)] for r in range(height)]
-            
-        if "stripe" in instruction:
-            # Vertical stripes
-            if "vertical" in instruction:
-                return [[(c%2) for c in range(width)] for r in range(height)]
-            # Horizontal stripes (default)
-            return [[(r%2) for _ in range(width)] for r in range(height)]
-
-        if "invert" in instruction:
-            return [[1 - cell for cell in row] for row in grid]
-
-        # Default: Invert (Mock behavior)
-        return [[1 - cell for cell in row] for row in grid]
+    async def generate(self, instruction: str, image_url: str = None) -> str | None:
+        # Mock doesn't really generate images, just placeholder
+        return None
 
 import os
 import json
@@ -42,61 +23,10 @@ class APIEngine(AIEngine):
     def __init__(self):
         self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
-        prompt = f"""
-        You are an expert weaving pattern designer.
-        The pattern is represented as a 2D grid of 0s (white) and 1s (black).
-        
-        Current Grid ({len(grid)}x{len(grid[0])}):
-        {json.dumps(grid)}
-        
-        Instruction: {instruction}
-        
-        Return ONLY the new grid as a JSON array of arrays of integers (0 or 1).
-        Do not include any markdown formatting or explanation. Just the JSON.
-        """
-        
-        try:
-            response = await self.client.chat.completions.create(
-                model="gpt-4-turbo-preview", # or gpt-3.5-turbo
-                messages=[
-                    {"role": "system", "content": "You are a pattern generator."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={ "type": "json_object" }
-            )
-            
-            content = response.choices[0].message.content
-            # Handle potential JSON wrapping
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-                
-            # validation
-            data = json.loads(content)
-            # OpenAI might return {"grid": [[...]]} or just [[...]] based on prompt, 
-            # but with json_object it forces valid JSON.
-            # Let's adjust prompt to request specific validation key or just parse.
-            
-            # Actually, standardizing the response is safer.
-            # Let's check what we get. Defaults to expecting the structure.
-            if "grid" in data:
-                return data["grid"]
-            if isinstance(data, list):
-                return data
-            
-            # Fallback if structure is weird but contains the list
-            for key, value in data.items():
-                if isinstance(value, list) and len(value) > 0 and isinstance(value[0], list):
-                    return value
-
-            return grid # Fallback pattern
-            
-        except Exception as e:
-            print(f"OpenAI API Error: {e}")
-            # Fallback to mock behavior for now if API fails (e.g. no key)
-            return [[1 - cell for cell in row] for row in grid]
+    async def generate(self, instruction: str, image_url: str = None) -> str | None:
+        # APIEngine (OpenAI) currently doesn't support image generation in this flow easily without DALL-E.
+        # Returning None for now.
+        return None
 
 
 
@@ -116,74 +46,78 @@ class GeminiEngine(AIEngine):
             print("Warning: GEMINI_API_KEY not found.")
         self.client = genai.Client(api_key=api_key)
 
-    async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
-        width = len(grid[0]) if grid and len(grid) > 0 else 8
-        height = len(grid) if grid else 8
-
-        prompt = f"""
-        Design a high-contrast, black and white weaving pattern based on this description: "{instruction}".
-        The image should be a clear, tiling textile pattern.
-        """
+    async def generate(self, instruction: str, image_url: str = None) -> str | None:
         
+        prompt = instruction
+        
+        input_image = None
+        if image_url:
+             try:
+                import httpx
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(image_url)
+                    if resp.status_code == 200:
+                        image_bytes = resp.content
+                        input_image = Image.open(io.BytesIO(image_bytes))
+             except Exception as e:
+                 print(f"Failed to download image: {e}")
+
         try:
-            response = self.client.models.generate_images(
-                model='gemini-2.0-flash-exp', # Using 2.0 Flash as proxy for 2.5/Nano Banana if not public yet, or strictly 'gemini-2.5-flash-image' if available. 
-                # Note: 'gemini-2.5-flash-image' might be the name. Let's try 'gemini-2.0-flash-exp' or 'imagen-3.0-generate-001'? 
-                # User asked for "Nano Banana" which is 2.5. 
-                # I will use 'gemini-2.0-flash-exp' as a safe default for strictly "Gemini" API or check if 'gemini-2.5-flash' supports images?
-                # Actually, the search result said "Nano Banana" is "gemini-2.5-flash-image".
-                # I will use that.
-                prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    include_rai_reason=True,
-                    output_mime_type="image/jpeg"
+            # Use Gemini 2.5 Flash Image (Nano Banana) for Multimodal generation
+            # Allows Text + Image input -> Image output
+            
+            contents = [prompt]
+            if input_image:
+                contents.append(input_image)
+
+            # Note: For generating images with Gemini, we use generate_content 
+            # and expect image output if supported.
+            # We might need to specify config to output image.
+            
+            response = self.client.models.generate_content(
+                model='gemini-2.5-flash-image',
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_modalities=['IMAGE'],
+                    # safety_settings=...
                 )
             )
             
-            if not response.generated_images:
-                print("No image generated")
-                return grid
+            # Extract image from response
+            image_bytes = None
+            for part in response.parts:
+                # Check for inline data (image)
+                if part.inline_data:
+                    image_bytes = part.inline_data.data
+                    break
+                # Or executable code that produced image? 
+                # Usually native image gen returns inline_data with mime_type image/jpeg or png
+                
+            if not image_bytes:
+                # Fallback: Check if it generated images via the 'generated_images' attribute 
+                # (if SDK maps it differently for this model)
+                if hasattr(response, 'generated_images') and response.generated_images:
+                     image_bytes = response.generated_images[0].image.image_bytes
 
-            image_bytes = response.generated_images[0].image.image_bytes
-            return self._image_to_grid(image_bytes, width, height)
+            if not image_bytes:
+                print("No image generated by Gemini 2.5")
+                return None
+
+            # Convert to Base64 for frontend
+            import base64
+            base64_image = "data:image/jpeg;base64," + base64.b64encode(image_bytes).decode('utf-8')
+            
+            return base64_image
 
         except Exception as e:
             print(f"Gemini API Error: {e}")
-            # Fallback trying a different model name if 2.5 fails?
-            return grid
-
-    def _image_to_grid(self, image_data: bytes, target_w: int, target_h: int) -> List[List[int]]:
-        try:
-            img = Image.open(io.BytesIO(image_data))
-            # Convert to grayscale
-            img = img.convert("L")
-            # Resize to grid dimensions (using Nearest Neighbor to keep structure, or Lanczos for smooth?)
-            # Validating: Grid is small (e.g. 8x8 or 16x16). Downscaling complex image might be messy.
-            img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-            
-            # Thresholding to 0 and 1
-            # 0 = white/light, 1 = black/dark? 
-            # In our current grid: 0 (white?) 1 (black?). 
-            # Let's check existing patterns. Hikari-ji: 0/1.
-            # Usually 1 is foreground (thread present).
-            
-            # Convert to numpy array
-            arr = np.array(img)
-            # Normalize and threshold (mean?)
-            threshold = 128
-            binary = (arr < threshold).astype(int) # Darker than 128 becomes 1, Lighter becomes 0
-            
-            return binary.tolist()
-        except Exception as e:
-            print(f"Image processing error: {e}")
-            return [[0]*target_w for _ in range(target_h)]
+            return None
 
 
 class LocalEngine(AIEngine):
-    async def generate(self, grid: List[List[int]], instruction: str) -> List[List[int]]:
+    async def generate(self, instruction: str, image_url: str = None) -> str | None:
         # TODO: Implement Local Model call
-        return grid
+        return None
 
 def get_engine(model_type: str) -> AIEngine:
     if model_type == "gemini":
