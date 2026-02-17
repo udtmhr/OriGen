@@ -4,7 +4,7 @@ from uuid import uuid4
 from ...models import Pattern, PatternCreate, GenerationRequest
 from ...services.ai_engine import get_engine
 import os
-import httpx
+import vercel_blob
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,44 +22,44 @@ async def fetch_vercel_blobs() -> List[Pattern]:
         return []
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://blob.vercel-storage.com",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "x-api-version": "1"
-                }
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            blobs = data.get("blobs", [])
-            patterns = []
-            for blob in blobs:
-                # Use URL as ID
+        # Use vercel_blob SDK
+        # list() returns a dict with 'blobs' key or list of objects?
+        # Based on dir(), likely returns similar structure to JS SDK response logic
+        resp = vercel_blob.list()
+        
+        # The library might return a dict like {'blobs': [...], 'cursor': ...} or just list of blobs.
+        # Let's inspect the return type by assuming it mimics the API response structure or check implementation.
+        # If it returns a dict:
+        blobs = resp.get("blobs", []) if isinstance(resp, dict) else resp
+        
+        patterns = []
+        for blob in blobs:
+            # Check if blob is dict or object
+            if isinstance(blob, dict):
                 url = blob.get("url")
                 download_url = blob.get("downloadUrl")
-                # Prefer downloadUrl if available and different? Usually url is fine.
-                # But let's use url as id and image_url.
-                
                 pathname = blob.get("pathname")
-                
-                if not url or not pathname:
-                    continue
+            else:
+                # If object
+                url = getattr(blob, "url", None)
+                download_url = getattr(blob, "downloadUrl", None)
+                pathname = getattr(blob, "pathname", None)
 
-                # Create a pattern from the blob
-                patterns.append(Pattern(
-                    id=url,
-                    name=pathname, 
-                    name_kanji=pathname,
-                    name_romaji=pathname,
-                    description="Imported from Vercel Blob",
-                    width=8,
-                    height=8,
-                    image_url=download_url or url, # Use downloadUrl if available
-                    grid=[[0 for _ in range(8)] for _ in range(8)]
-                ))
-            return patterns
+            if not url or not pathname:
+                continue
+
+            patterns.append(Pattern(
+                id=url,
+                name=pathname, 
+                name_kanji=pathname,
+                name_romaji=pathname,
+                description="Imported from Vercel Blob",
+                width=8,
+                height=8,
+                image_url=download_url or url,
+                grid=[[0 for _ in range(8)] for _ in range(8)]
+            ))
+        return patterns
     except Exception as e:
         logger.error(f"Failed to fetch Vercel Blobs: {e}")
         # Return a dummy pattern with error details for debugging (only in dev)
