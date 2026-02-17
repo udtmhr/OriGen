@@ -1,6 +1,7 @@
 // Priority: 1. Env Var (Vercel/Cloud), 2. Localhost (Dev fallback)
 // Priority: 1. Env Var, 2. Localhost (Dev), 3. Relative (Prod)
 const API_BASE_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
+console.log("Current API_BASE_URL:", API_BASE_URL, "Hostname:", window.location.hostname);
 
 export const getPatterns = async () => {
     const response = await fetch(`${API_BASE_URL}/patterns`);
