@@ -160,7 +160,7 @@ const Workspace: React.FC = () => {
                             placeholder={modelType === 'gemini' ? "どんな柄の画像を作りたいですか？ (例: 猫のピクセルアート)" : "例: 春の穏やかな雰囲気，パステルカラー"}
                             value={instruction}
                             onChange={(e) => setInstruction(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSend(); }}
                             disabled={loading}
                         />
                         <button
