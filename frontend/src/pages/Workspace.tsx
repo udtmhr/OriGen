@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Send, Sparkles, Save, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getPattern, generatePattern, saveGeneratedPattern } from '../api/client';
-import type { Pattern } from '../types';
+import { getPattern, generatePattern, saveGeneratedPattern, logGeneration } from '../api/client';
 import { AuthWidget } from '../components/Auth';
 import { useAuth } from '../components/AuthContext';
+import type { Pattern } from '../types';
 
 interface Message {
     role: 'user' | 'system';
@@ -91,6 +91,7 @@ const Workspace: React.FC = () => {
     const [pattern, setPattern] = useState<Pattern | null>(initialPattern || null);
     const [instruction, setInstruction] = useState('');
     const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
 
     // Initialize messages with the pattern image if available
     const [messages, setMessages] = useState<Message[]>(() => [
@@ -138,6 +139,12 @@ const Workspace: React.FC = () => {
 
             // Use the generated image URL if available, otherwise fallback to placeholder
             const generatedImage = result.generated_image_url || `https://placehold.co/400x400/e2e8f0/1e293b?text=Generated+${Date.now()}`;
+            const base64Data = result.generated_image_url ? `data:image/jpeg;base64,${result.generated_image_url}` : generatedImage;
+            
+            // Log history
+            if (user && result.generated_image_url) {
+                await logGeneration(user.id, userMsg, base64Data);
+            }
 
             // Grid update removed as per user request
             // setPattern(prev => prev ? { ...prev, grid: result.grid } : null);

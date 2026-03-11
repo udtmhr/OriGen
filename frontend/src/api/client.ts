@@ -21,6 +21,119 @@ export const getPattern = async (id: string) => {
     return data;
 };
 
+// --- Pattern Likes API ---
+export const toggleLike = async (patternId: string, userId: string) => {
+    // Check if it already exists
+    const { data: existingLike } = await supabase
+        .from('pattern_likes')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('pattern_id', patternId)
+        .single();
+
+    if (existingLike) {
+        // Unlike
+        const { error } = await supabase
+            .from('pattern_likes')
+            .delete()
+            .eq('user_id', userId)
+            .eq('pattern_id', patternId);
+        if (error) throw new Error(error.message);
+        return false;
+    } else {
+        // Like
+        const { error } = await supabase
+            .from('pattern_likes')
+            .insert({ user_id: userId, pattern_id: patternId });
+        if (error) throw new Error(error.message);
+        return true;
+    }
+};
+
+export const getLikedPatterns = async (userId: string) => {
+    const { data, error } = await supabase
+        .from('pattern_likes')
+        .select('patterns(*)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    
+    if (error) throw new Error(error.message);
+    
+    // Flatten result
+    return data.map((d: any) => d.patterns).filter(Boolean);
+};
+
+// --- Generation History API ---
+export const getGenerationHistory = async (userId: string) => {
+    const { data, error } = await supabase
+        .from('generation_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+    if (error) throw new Error(error.message);
+    return data;
+};
+
+export const logGeneration = async (userId: string, prompt: string, imageUrl: string) => {
+    const { error } = await supabase
+        .from('generation_history')
+        .insert({
+            user_id: userId,
+            prompt: prompt,
+            image_url: imageUrl
+        });
+    if (error) console.error("Failed to log generation history", error.message);
+};
+
+// --- User Profile & Stats API ---
+export const getProfile = async (userId: string) => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+    if (error) throw new Error(error.message);
+    return data;
+};
+
+export const updateProfile = async (userId: string, updates: any) => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+    if (error) throw new Error(error.message);
+    return data;
+};
+
+export const getUserPatterns = async (userId: string) => {
+    const { data, error } = await supabase
+        .from('patterns')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return data;
+};
+
+export const updatePatternVisibility = async (patternId: string, isPublic: boolean) => {
+    const { error } = await supabase
+        .from('patterns')
+        .update({ is_public: isPublic })
+        .eq('id', patternId);
+    if (error) throw new Error(error.message);
+};
+
+export const getUserStats = async (userId: string) => {
+    const { data, error } = await supabase
+        .rpc('get_user_stats', { user_uid: userId });
+        
+    if (error) throw new Error(error.message);
+    return data?.[0] || { total_patterns: 0, total_likes: 0 };
+};
+
 export const saveGeneratedPattern = async (
     base64DataUrl: string,
     name: string,

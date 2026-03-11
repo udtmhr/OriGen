@@ -4,6 +4,7 @@ import { AuthProvider } from './components/AuthContext';
 import Top from './pages/Top';
 import PatternList from './pages/PatternList';
 import Workspace from './pages/Workspace';
+import MyPage from './pages/MyPage';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -22,6 +23,11 @@ function AnimatedRoutes() {
         <Route path="/workspace/:id" element={
             <ProtectedRoute>
                 <Workspace />
+            </ProtectedRoute>
+        } />
+        <Route path="/mypage" element={
+            <ProtectedRoute>
+                <MyPage />
             </ProtectedRoute>
         } />
       </Routes>

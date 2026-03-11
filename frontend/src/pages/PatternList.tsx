@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { getPatterns } from '../api/client';
+import { ArrowLeft, Heart, User } from 'lucide-react';
+import { getPatterns, toggleLike, getLikedPatterns } from '../api/client';
 import type { Pattern } from '../types';
 import { AuthWidget } from '../components/Auth';
+import { useAuth } from '../components/AuthContext';
 
 const PatternList: React.FC = () => {
+    const { user } = useAuth();
     const [patterns, setPatterns] = React.useState<Pattern[]>([]);
+    const [likedPatternIds, setLikedPatternIds] = React.useState<Set<string>>(new Set());
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -14,10 +17,38 @@ const PatternList: React.FC = () => {
     React.useEffect(() => {
         setLoading(true);
         getPatterns(searchQuery)
-            .then(setPatterns)
+            .then(data => {
+                setPatterns(data);
+                if (user) {
+                    return getLikedPatterns(user.id);
+                }
+                return [];
+            })
+            .then(liked => {
+                setLikedPatternIds(new Set(liked.map((p: any) => p.id)));
+            })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
-    }, [searchQuery]);
+    }, [searchQuery, user]);
+
+    const handleLike = async (e: React.MouseEvent, patternId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!user) return alert("いいねするにはログインが必要です。");
+        
+        try {
+            const isLikedNow = await toggleLike(patternId, user.id);
+            const newLiked = new Set(likedPatternIds);
+            if (isLikedNow) {
+                newLiked.add(patternId);
+            } else {
+                newLiked.delete(patternId);
+            }
+            setLikedPatternIds(newLiked);
+        } catch (error) {
+            console.error("Failed to toggle like", error);
+        }
+    };
 
     if (error) return <div className="p-4 text-center text-red-500">Error: {error}</div>;
 
@@ -29,7 +60,14 @@ const PatternList: React.FC = () => {
                     <ArrowLeft size={24} />
                 </Link>
                 <h1 className="text-2xl font-serif tracking-wider text-gray-800 absolute left-1/2 -translate-x-1/2">OriGen</h1>
-                <AuthWidget />
+                <div className="flex items-center gap-4">
+                    {user && (
+                        <Link to="/mypage" className="p-2 text-gray-500 hover:text-gray-900 transition-colors bg-gray-50 rounded-full border border-gray-200" title="マイページ">
+                            <User className="w-5 h-5" />
+                        </Link>
+                    )}
+                    <AuthWidget />
+                </div>
             </header>
 
             {/* Main Content */}
@@ -57,8 +95,15 @@ const PatternList: React.FC = () => {
                             <Link
                                 key={pattern.id}
                                 to={`/workspace/${encodeURIComponent(pattern.id)}`}
-                                className="aspect-square bg-gray-100 rounded-2xl overflow-hidden hover:opacity-90 transition-opacity"
+                                className="aspect-square bg-gray-100 rounded-2xl overflow-hidden hover:opacity-90 transition-opacity relative group"
                             >
+                                {/* Like Button */}
+                                <button 
+                                    onClick={(e) => handleLike(e, pattern.id)}
+                                    className="absolute top-3 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur shadow-sm hover:scale-110 active:scale-95 transition-all z-10 opacity-0 group-hover:opacity-100"
+                                >
+                                    <Heart className={`w-5 h-5 ${likedPatternIds.has(pattern.id) ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-500'}`} />
+                                </button>
                                 {pattern.image_url ? (
                                     <img
                                         src={pattern.image_url}
