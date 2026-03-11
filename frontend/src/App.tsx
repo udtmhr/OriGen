@@ -1,8 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { AuthProvider } from './components/AuthContext';
 import Top from './pages/Top';
 import PatternList from './pages/PatternList';
 import Workspace from './pages/Workspace';
+
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -11,8 +14,16 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Top />} />
-        <Route path="/patterns" element={<PatternList />} />
-        <Route path="/workspace/:id" element={<Workspace />} />
+        <Route path="/patterns" element={
+            <ProtectedRoute>
+                <PatternList />
+            </ProtectedRoute>
+        } />
+        <Route path="/workspace/:id" element={
+            <ProtectedRoute>
+                <Workspace />
+            </ProtectedRoute>
+        } />
       </Routes>
     </AnimatePresence>
   );
@@ -20,9 +31,11 @@ function AnimatedRoutes() {
 
 function App() {
   return (
-    <Router>
-      <AnimatedRoutes />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AnimatedRoutes />
+      </Router>
+    </AuthProvider>
   );
 }
 

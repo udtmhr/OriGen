@@ -1,15 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Save, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getPattern, generatePattern } from '../api/client';
+import { getPattern, generatePattern, saveGeneratedPattern } from '../api/client';
 import type { Pattern } from '../types';
+import { AuthWidget } from '../components/Auth';
+import { useAuth } from '../components/AuthContext';
 
 interface Message {
     role: 'user' | 'system';
     text: string;
     imageUrl?: string;
+    isGenerated?: boolean;
 }
+
+const SavePatternForm = ({ imageUrl }: { imageUrl: string }) => {
+    const { user } = useAuth();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [isPublic, setIsPublic] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
+
+    if (!user) return <p className="text-xs text-gray-500 mt-2">ログインすると図案の保存と公開ができます。</p>;
+
+    if (saved) return <div className="text-sm text-green-600 flex items-center gap-1 mt-2 font-medium"><CheckCircle size={16} /> 保存しました！</div>;
+
+    const handleSave = async () => {
+        if (!name.trim()) {
+            setError('タイトルを入力してください');
+            return;
+        }
+        setSaving(true);
+        setError('');
+        try {
+            await saveGeneratedPattern(imageUrl, name, description, isPublic, user.id);
+            setSaved(true);
+        } catch (err: any) {
+            setError(err.message || 'Failed to save');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="mt-3 bg-white border rounded-xl p-3 shadow-sm space-y-2 text-sm">
+            <h4 className="font-bold text-gray-700 flex items-center gap-1"><Save size={16}/> 保存して公開</h4>
+            <div className="space-y-2">
+                <input 
+                    type="text" 
+                    placeholder="図案のタイトル" 
+                    value={name} onChange={e => setName(e.target.value)}
+                    className="w-full border rounded px-2 py-1 focus:ring-1 focus:ring-black outline-none"
+                    disabled={saving}
+                />
+                <input 
+                    type="text" 
+                    placeholder="説明 (任意)" 
+                    value={description} onChange={e => setDescription(e.target.value)}
+                    className="w-full border rounded px-2 py-1 focus:ring-1 focus:ring-black outline-none"
+                    disabled={saving}
+                />
+                <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={isPublic} onChange={e => setIsPublic(e.target.checked)}
+                        disabled={saving}
+                    />
+                    <span>公開する（他のユーザーからも検索可能になります）</span>
+                </label>
+                {error && <p className="text-red-500 text-xs">{error}</p>}
+                <button 
+                    className="w-full bg-black text-white rounded-lg py-1.5 font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    onClick={handleSave}
+                    disabled={saving}
+                >
+                    {saving ? '保存中...' : '保存'}
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const Workspace: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -74,8 +146,9 @@ const Workspace: React.FC = () => {
                 ...prev,
                 {
                     role: 'system',
-                    text: '新しいパターンを生成しました。',
-                    imageUrl: generatedImage
+                    text: '新しいパターンを生成しました。名前をつけて保存しましょう！',
+                    imageUrl: generatedImage,
+                    isGenerated: true
                 }
             ]);
         } catch (err: any) {
@@ -90,11 +163,14 @@ const Workspace: React.FC = () => {
 
     return (
         <div className="flex h-screen flex-col bg-white">
-            <header className="border-b p-4 flex items-center gap-4 sticky top-0 bg-white z-10">
-                <Link to="/patterns" className="text-gray-500 hover:text-gray-900">
-                    <ArrowLeft size={24} />
-                </Link>
-                <h1 className="text-xl font-bold">Workspace: {pattern?.name}</h1>
+            <header className="border-b p-4 flex items-center justify-between sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-4">
+                    <Link to="/patterns" className="text-gray-500 hover:text-gray-900">
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <h1 className="text-xl font-bold">Workspace: {pattern?.name}</h1>
+                </div>
+                <AuthWidget />
             </header>
 
             <div className="flex flex-1 overflow-hidden">
@@ -136,17 +212,22 @@ const Workspace: React.FC = () => {
                                                         layoutId={`pattern-image-${pattern.id}`}
                                                         src={msg.imageUrl}
                                                         alt="Generated pattern"
-                                                        className="w-full h-auto rounded"
+                                                        className="w-full h-auto rounded hover:opacity-90 transition-opacity cursor-pointer"
+                                                        onClick={() => window.open(msg.imageUrl, '_blank')}
                                                         transition={{ duration: 0.5, type: "spring" }}
                                                     />
                                                 ) : (
                                                     <img
                                                         src={msg.imageUrl}
                                                         alt="Generated pattern"
-                                                        className="w-full h-auto rounded"
+                                                        className="w-full h-auto rounded hover:opacity-90 transition-opacity cursor-pointer"
+                                                        onClick={() => window.open(msg.imageUrl, '_blank')}
                                                     />
                                                 )}
                                             </div>
+                                        )}
+                                        {msg.isGenerated && msg.imageUrl && (
+                                            <SavePatternForm imageUrl={msg.imageUrl} />
                                         )}
                                     </div>
                                 </div>
