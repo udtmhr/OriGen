@@ -175,7 +175,6 @@ const Workspace: React.FC = () => {
                     <Link to="/patterns" className="text-gray-500 hover:text-gray-900">
                         <ArrowLeft size={24} />
                     </Link>
-                    <h1 className="text-xl font-bold">Workspace: {pattern?.name}</h1>
                 </div>
                 <AuthWidget />
             </header>
