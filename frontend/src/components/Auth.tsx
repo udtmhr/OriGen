@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { LogOut, User, Loader2 } from 'lucide-react'
+import { LogOut, Loader2 } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
 export const AuthWidget = () => {
@@ -40,10 +40,6 @@ export const AuthWidget = () => {
   if (user) {
     return (
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <User className="w-4 h-4" />
-          <span>{user.email}</span>
-        </div>
         <button 
           onClick={handleLogout}
           className="p-2 text-gray-500 hover:text-black transition-colors"
