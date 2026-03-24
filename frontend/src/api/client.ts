@@ -100,8 +100,7 @@ export const getProfile = async (userId: string) => {
 export const updateProfile = async (userId: string, updates: any) => {
     const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', userId)
+        .upsert({ id: userId, ...updates })
         .select()
         .single();
     if (error) throw new Error(error.message);

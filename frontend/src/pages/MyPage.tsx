@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, Heart, History, User, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Heart, History, User, LogOut, Settings, Plus, Sparkles } from 'lucide-react';
 import { getProfile, updateProfile, getUserStats, getUserPatterns, getLikedPatterns, getGenerationHistory, updatePatternVisibility } from '../api/client';
 
 const MyPage: React.FC = () => {
@@ -119,6 +120,16 @@ const MyPage: React.FC = () => {
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2">
+                    <Link 
+                        to="/patterns"
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors bg-indigo-600 text-white hover:bg-indigo-700 mb-4 shadow-sm"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span className="font-bold text-sm">新しく作成する</span>
+                    </Link>
+
+                    <div className="h-px bg-gray-100 my-4 mx-2"></div>
+
                     <button 
                         onClick={() => handleTabChange('gallery')}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'gallery' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -235,14 +246,24 @@ const MyPage: React.FC = () => {
                                                         <p className="text-xs text-gray-500 mt-1 line-clamp-2">{pattern.description || '説明なし'}</p>
                                                         
                                                         {/* Future addition: Export to SVG button could go here */}
-                                                        <a 
-                                                            href={pattern.image_url} 
-                                                            download={`pattern-${pattern.name}.jpg`}
-                                                            target="_blank"
-                                                            className="mt-4 block w-full text-center py-2 bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-100 transition-colors"
-                                                        >
-                                                            画像をダウンロード
-                                                        </a>
+                                                        <div className="flex gap-2 mt-4">
+                                                            <Link 
+                                                                to={`/workspace/${pattern.id}`}
+                                                                className="flex-1 text-center py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1"
+                                                            >
+                                                                <Sparkles size={14} />
+                                                                AIで編集
+                                                            </Link>
+                                                            <a 
+                                                                href={pattern.image_url} 
+                                                                download={`pattern-${pattern.name}.jpg`}
+                                                                target="_blank"
+                                                                className="px-3 py-2 bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+                                                                title="ダウンロード"
+                                                            >
+                                                                ↓
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -271,7 +292,14 @@ const MyPage: React.FC = () => {
                                                     </div>
                                                     <div className="p-4">
                                                         <h3 className="font-bold text-gray-900 truncate">{pattern.name}</h3>
-                                                        <p className="text-xs text-gray-500 mt-1 truncate">@{pattern.user_id?.split('-')[0]}...</p>
+                                                        <p className="text-xs text-gray-500 mt-1 truncate mb-3">@{pattern.user_id?.split('-')[0]}...</p>
+                                                        <Link 
+                                                            to={`/workspace/${pattern.id}`}
+                                                            className="w-full text-center py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1"
+                                                        >
+                                                            <Sparkles size={14} />
+                                                            AIで編集
+                                                        </Link>
                                                     </div>
                                                 </div>
                                             ))}
