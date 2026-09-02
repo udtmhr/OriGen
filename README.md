@@ -58,9 +58,21 @@ The application will be available at `http://localhost:5173` (or the port shown 
 
 ## Configuration
 
-To use the **Cloud API** mode, you need an OpenAI API Key.
-1. Create a `.env` file in the `backend` directory based on `.env.example`.
-2. Add your key: `OPENAI_API_KEY=sk-...`
+Create local environment files from the tracked examples:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+Set private backend credentials only in `backend/.env` or in the deployment
+platform's secret store. Variables prefixed with `VITE_` are embedded in the
+browser bundle, so they must never contain private credentials such as a
+Supabase service-role key. `VITE_SUPABASE_ANON_KEY` is intended to be public;
+protect application data with Supabase Row Level Security policies.
+
+Do not commit `.env`, `.env.local`, backup environment files, API keys, or
+service-role credentials.
 
 
 
@@ -74,6 +86,10 @@ Deploy this repository as **two separate projects** on Vercel:
 3. Select **Framework Preset**: `Other` (or utilize `@vercel/python` automatically).
 4. Add Environment Variable:
    - `OPENAI_API_KEY`: Your OpenAI API key.
+   - `GEMINI_API_KEY`: Your Gemini API key.
+   - `BLOB_READ_WRITE_TOKEN`: Your Vercel Blob read/write token.
+   - `SUPABASE_URL`: Your Supabase project URL.
+   - `SUPABASE_KEY`: A server-side Supabase key with only the permissions the backend requires.
 5. Deploy.
 6. **Copy the assigned domain** (e.g., `https://origen-backend.vercel.app`).
 
@@ -83,6 +99,8 @@ Deploy this repository as **two separate projects** on Vercel:
 3. Select **Framework Preset**: `Vite`.
 4. Add Environment Variable:
    - `VITE_API_URL`: The URL of your Backend Project (e.g., `https://origen-backend.vercel.app`).
+   - `VITE_SUPABASE_URL`: Your Supabase project URL.
+   - `VITE_SUPABASE_ANON_KEY`: Your public Supabase anon key.
 5. Deploy.
 
 ## License
